@@ -27,7 +27,7 @@ def file_name(file_dir):
         print(files)
     return name
 name = []
-temp= file_name('E:\onedrive\学术\第三篇论文\借鉴文献')
+temp= file_name('D:\onedrive\学术\第三篇论文\借鉴文献')
 
 # import os 
 # def file_name(file_dir):
@@ -52,29 +52,55 @@ for i in range(len(name)):
     temp = []
     temp1 = []
     pypdf_doc = PdfFileReader(open(name[i], "rb"))
-    pypdf_page = pypdf_doc.getPage(0)
+    num = pypdf_doc.getNumPages()
+    pypdf_page = pypdf_doc.getPage(0-num)
     temp.append('--------------------------------------'+name[i]+'--------------------------------------')
     temp.append('------------------------------------------------------------------------------------------------------------')
     temp1.append('--------------------------------------'+name[i]+'--------------------------------------')
     temp1.append('------------------------------------------------------------------------------------------------------------')
-    if '/Annots' in pypdf_page:
-        print("Page comments num: %d" % len(pypdf_page["/Annots"]))
-        for annot in pypdf_page['/Annots'] :
-            subtype = annot.getObject()['/Subtype']
-            # print(1)
-            if subtype == "/Highlight":
-                print(annot.getObject()['/Contents'])
-                temp.append(str(annot.getObject()['/Contents']))
-  
+    
+    pdf_input = PdfFileReader(open(name[i], "rb"))
+    n_pages = pdf_input.getNumPages()
+    print("This document has %d pages." % n_pages)
     mupdf_doc = fitz.open(name[i])
-    mupdf_page = mupdf_doc.loadPage(0)
-    wordlist = mupdf_page.getText("words")  # list of words on page
-    wordlist.sort(key=lambda w: (w[3], w[0]))  # ascending y, then x
-    for annot in mupdf_page.annots():
-        # underline / highlight / strikeout / squiggly : 8 / 9 / 10 / 11
-        if annot.type[0] == 8:
-            print(_parse_highlight(annot, wordlist))
-            temp1.append(_parse_highlight(annot, wordlist))
+    for k in range(n_pages) :
+    # get the data from this PDF page (first line of text, plus annotations)
+        page = pdf_input.getPage(k)
+        text = page.extractText()
+    
+        try :
+            if '/Annots' in page:
+                # print("Page comments num: %d" % len(page["/Annots"]))
+                for annot in page['/Annots'] :
+                    # Other subtypes, such as /Link, cause errors
+                    #for key in annot.getObject().keys():
+                            #print(annot.getObject()[key])
+                    subtype = annot.getObject()['/Subtype']
+                    #if subtype == "/Popup":
+                    #    print(annot.getObject()['/Parent']['/Popup'])
+                    if subtype == "/Highlight":
+                        print(annot.getObject()['/Contents'])
+                        temp.append(str(annot.getObject()['/Contents']))
+        except :
+            pass
+
+    
+
+    
+        try :
+            mupdf_page = mupdf_doc.loadPage(k)
+            wordlist = mupdf_page.getText("words")  # list of words on page
+            wordlist.sort(key=lambda w: (w[3], w[0]))  # ascending y, then x
+            for annot in mupdf_page.annots():
+                # underline / highlight / strikeout / squiggly : 8 / 9 / 10 / 11
+                if annot.type[0] == 8:
+                    print(_parse_highlight(annot, wordlist))
+                    temp1.append(_parse_highlight(annot, wordlist))
+        except :
+            pass
+        
+        
+
     temp.append('.')
     temp1.append('.')
     temp = pd.DataFrame(temp)
